@@ -168,14 +168,11 @@
                         if (tag[0] === 'r') {  // 'r' indicates a URL
                             // Check if the URL is an image
                             if (/\.(jpeg|jpg|gif|png|bmp|webp|tiff)$/i.test(tag[1])) {
-                                formattedContent = formattedContent.replace(tag[1], `<br><img class="note-image" src="${tag[1]}" alt="Image"/>`);
-                            } else if (/^(http(s)?:\/\/)?((w){3}.)?youtu(be|.be)?(\.com)?\/.+/i.test(tag[1])) {
+                                formattedContent = formattedContent.replace(tag[1], `<br><img class="note-image" src="${tag[1]}" alt="Image"/><br>`);
+                            } else if (/^(http(s)?:\/\/)?((w){3}.)?(m.)?youtu(be|.be)?(\.com)?\/.+/i.test(tag[1])) {
                                 // If the URL is a YouTube video, replace with an embedded YouTube player
-                                const videoId = tag[1].split('v=')[1];
-                                const ampersandPosition = videoId.indexOf('&');
-                                if(ampersandPosition != -1) {
-                                    videoId = videoId.substring(0, ampersandPosition);
-                                }
+                                const urlParams = new URLSearchParams(new URL(tag[1]).search);
+                                const videoId = urlParams.get('v');
                                 formattedContent = formattedContent.replace(tag[1], `<br><iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`);
                             } else {
                                 formattedContent = formattedContent.replace(tag[1], `<a href="${tag[1]}" target="_blank">${tag[1]}</a>`);
