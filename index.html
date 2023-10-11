@@ -173,6 +173,12 @@
                                 // If the URL is a YouTube video, replace with an embedded YouTube player
                                 const urlParams = new URLSearchParams(new URL(tag[1]).search);
                                 const videoId = urlParams.get('v');
+                                console.log(videoId)
+                                formattedContent = formattedContent.replace(tag[1], `<br><iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`);
+                            } else if (/^https:\/\/youtu\.be\/.+/i.test(tag[1])) {
+                                // If the URL is a YouTube video, replace with an embedded YouTube player
+                                const videoId = tag[1].split('/')[3].split('?')[0];  // Extract video ID
+                                console.log(videoId)
                                 formattedContent = formattedContent.replace(tag[1], `<br><iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`);
                             } else {
                                 formattedContent = formattedContent.replace(tag[1], `<a href="${tag[1]}" target="_blank">${tag[1]}</a>`);
@@ -188,13 +194,20 @@
                         <div class="note-content">${formattedContent}</div>
                     `;
                     
+                    const notesElement = document.getElementById('notes');
+                    
                     if(isInitialLoad) {
-                        document.getElementById('notes').prepend(noteElement);
+                        notesElement.prepend(noteElement);
                     } else {
-                        document.getElementById('notes').append(noteElement);
+                        notesElement.append(noteElement);
                     }
                     
-                    document.getElementById('notes').scrollTop = document.getElementById('notes').scrollHeight;
+                    // Check if there are more than 500 notes, and if so, remove the oldest one
+                    while (notesElement.children.length > 500) {
+                        notesElement.removeChild(notesElement.firstChild);
+                    }
+                    
+                    notesElement.scrollTop = notesElement.scrollHeight;
                 }
 
             startWebSocket();
