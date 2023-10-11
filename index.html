@@ -132,13 +132,13 @@
                     const data = JSON.parse(message.data);
                     const [type, subscriptionId, event] = data;
                     if (type === 'EVENT') {
-                        displayEvent(event);
+                        displayEvent(event, !initialLoadFinished);
                     } else if (type === 'EOSE' && !initialLoadFinished) {
                         initialLoadFinished = true;
                         buffer.sort((a, b) => a.created_at - b.created_at);
                         for (const event of buffer) {
                             if (messageCount >= 500) break;
-                            displayEvent(event);
+                            displayEvent(event, true);
                             messageCount++;
                         }
                         buffer = [];
@@ -155,7 +155,7 @@
                 };
             };
 
-            function displayEvent(event) {
+            function displayEvent(event, isInitialLoad = false) {
                 console.log("New event received", event);
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note';
@@ -180,17 +180,22 @@
                         }
                     }
                 }
-
-                noteElement.innerHTML = `
-                    <div class="note-header">
-                        <div class="author">${formattedAuthor}</div>
-                        <div class="date">${formattedDate}</div>
-                    </div>
-                    <div class="note-content">${formattedContent}</div>
-                `;
-                document.getElementById('notes').prepend(noteElement);
-                document.getElementById('notes').scrollTop = document.getElementById('notes').scrollHeight;
-            }
+                    noteElement.innerHTML = `
+                        <div class="note-header">
+                            <div class="author">${formattedAuthor}</div>
+                            <div class="date">${formattedDate}</div>
+                        </div>
+                        <div class="note-content">${formattedContent}</div>
+                    `;
+                    
+                    if(isInitialLoad) {
+                        document.getElementById('notes').prepend(noteElement);
+                    } else {
+                        document.getElementById('notes').append(noteElement);
+                    }
+                    
+                    document.getElementById('notes').scrollTop = document.getElementById('notes').scrollHeight;
+                }
 
             startWebSocket();
         </script>
