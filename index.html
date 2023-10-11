@@ -176,36 +176,26 @@
                 let formattedAuthor = `${event.pubkey.substring(0, 8)}:${event.pubkey.slice(-8)}`;
                 let formattedContent = event.content;
 
-                 if (event.tags) {
-                     for (let tag of event.tags) {
-                         if (tag[0] === 'r' || event.content.includes(tag[1])) {  // 'r' indicates a URL
-                             // Check if the URL is an image
-                             if (/\.(jpeg|jpg|gif|png|bmp|webp|tiff)$/i.test(tag[1])) {
-                                 formattedContent = formattedContent.replace(tag[1], `<br><img class="note-image" src="${tag[1]}" alt="Image"/><br>`);
-                             } else if (/\.mp3$/i.test(tag[1])) {
-                                 formattedContent = formattedContent.replace(tag[1], `<br><audio controls><source src="${tag[1]}" type="audio/mpeg">Your browser does not support the audio tag.</audio><br>`);
-                             } else if (/\.mp4$/i.test(tag[1])) {
-                                 formattedContent = formattedContent.replace(tag[1], `<br><video width="320" height="240" controls><source src="${tag[1]}" type="video/mp4">Your browser does not support the video tag.</video><br>`);
-                             } else if (/^(http(s)?:\/\/)?((w){3}.)?(m.)?youtu(be|.be)?(\.com)?\/.+/i.test(tag[1])) {
-                                 const urlParams = new URLSearchParams(new URL(tag[1]).search);
-                                 const videoId = urlParams.get('v');
-                                 formattedContent = formattedContent.replace(tag[1], `<br><iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`);
-                             } else if (/^https:\/\/youtu\.be\/.+/i.test(tag[1])) {
-                                 const videoId = tag[1].split('/')[3].split('?')[0];
-                                 formattedContent = formattedContent.replace(tag[1], `<br><iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`);
-                             } else {
-                                 formattedContent = formattedContent.replace(tag[1], `<a href="${tag[1]}" target="_blank">${tag[1]}</a>`);
-                             }
-                         }
-                     }
-                 }
-                 noteElement.innerHTML = `
+                let urlPattern = /(https?:\/\/[^\s]+)/g;
+                formattedContent = formattedContent.replace(urlPattern, function(url) {
+                    if (/\.(jpeg|jpg|gif|png|bmp|webp|tiff)$/i.test(url)) {
+                        return `<br><img class="note-image" src="${url}" alt="Image"/><br>`;
+                    } else if (/\.mp3$/i.test(url)) {
+                        return `<br><audio controls><source src="${url}" type="audio/mpeg">Your browser does not support the audio tag.</audio><br>`;
+                    } else if (/\.(mp4|mov|avi)$/i.test(url)) {
+                        return `<br><video width="320" height="240" controls><source src="${url}" type="video/mp4">Your browser does not support the video tag.</video><br>`;
+                    } else {
+                        return `<a href="${url}" target="_blank">${url}</a>`;
+                    }
+                });
+
+                noteElement.innerHTML = `
                      <div class="note-header">
                          <div class="author">${formattedAuthor}</div>
                          <div class="date">${formattedDate}</div>
                      </div>
                      <div class="note-content">${formattedContent}</div>
-                 `;
+                `;
                 
                 const notesElement = document.getElementById('notes');
 
