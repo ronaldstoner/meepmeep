@@ -43,8 +43,12 @@
                 word-wrap: break-word;
             }
 
-            .note:nth-child(even) {
+            .note-even {
                 background-color: #e0e0e0;
+            }
+
+            .note-odd {
+                background-color: white;
             }
 
             .note-header {
@@ -78,6 +82,7 @@
             let messageCount = 0;
             let relayServerUrl; 
             let isScrolledToBottom = true;
+            let globalMessageCount = 0;
 
             window.addEventListener('resize', resizeImages);
             window.addEventListener('load', resizeImages);
@@ -154,6 +159,8 @@
                             displayEvent(event, true);
                             messageCount++;
                         }
+                        // Reverse the global message count after loading the historical messages
+                        globalMessageCount = messageCount * 2 - globalMessageCount;
                         buffer = [];
                     }
                 };
@@ -175,6 +182,11 @@
                 let formattedDate = new Date(event.created_at * 1000).toLocaleString("en-US", { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
                 let formattedAuthor = `${event.pubkey.substring(0, 8)}:${event.pubkey.slice(-8)}`;
                 let formattedContent = event.content;
+
+                // Determine the note's class based on the global message count
+                const noteClass = globalMessageCount % 2 === 0 ? 'note-even' : 'note-odd';
+                noteElement.classList.add(noteClass);
+                globalMessageCount++;
 
                 let urlPattern = /(https?:\/\/[^\s]+)/g;
                 formattedContent = formattedContent.replace(urlPattern, function(url) {
