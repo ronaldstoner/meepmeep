@@ -144,23 +144,22 @@
                     const [type, subscriptionId, event] = data;
 
                     if (type === 'EVENT') {
-                        displayEvent(event, !initialLoadFinished);
-
-                        if (isScrolledToBottom) {
-                            notesElement.scrollTop = notesElement.scrollHeight;
+                        if (!initialLoadFinished) {
+                            // Add event to buffer during initial load
+                            buffer.push(event);
                         } else {
-                            document.title = "***meepmeep"; // Change the title to indicate new messages
+                            // Display event immediately after initial load
+                            displayEvent(event);
                         }
                     } else if (type === 'EOSE' && !initialLoadFinished) {
-                        initialLoadFinished = true;
+                        // Sort buffer, render all events, mark initial load as finished, and empty buffer
                         buffer.sort((a, b) => a.created_at - b.created_at);
                         for (const event of buffer) {
                             if (messageCount >= 500) break;
-                            displayEvent(event, true);
+                            displayEvent(event);
                             messageCount++;
                         }
-                        // Reverse the global message count after loading the historical messages
-                        globalMessageCount = messageCount * 2 - globalMessageCount;
+                        initialLoadFinished = true;
                         buffer = [];
                     }
                 };
@@ -175,7 +174,7 @@
                 };
             };
 
-            function displayEvent(event, isInitialLoad = false) {
+            function displayEvent(event) {
                 console.log("New event received", event);
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note';
@@ -211,11 +210,8 @@
                 
                 const notesElement = document.getElementById('notes');
 
-                if (isInitialLoad) {
-                    notesElement.prepend(noteElement);
-                } else {
-                    notesElement.append(noteElement);
-                }
+                // Always append the event to the notesElement
+                notesElement.append(noteElement);
 
                 resizeImages();  // Resize images after appending a new note
 
