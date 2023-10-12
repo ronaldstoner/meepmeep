@@ -93,6 +93,7 @@
             let relayServerUrl; 
             let isScrolledToBottom = true;
             let globalMessageCount = 0;
+            let authorNames = {};
 
             window.addEventListener('resize', resizeImages);
             window.addEventListener('load', resizeImages);
@@ -145,7 +146,7 @@
                 connection.onopen = () => {
                     const twoDaysAgo = Math.floor(Date.now() / 1000) - (2 * 24 * 60 * 60);
                     const subscriptionId = 'meepmeep-' + generateGUID();  // using generated GUID here
-                    const filters = { kinds: [1], since: twoDaysAgo };
+                    const filters = { kinds: [0, 1], since: twoDaysAgo };
                     connection.send(JSON.stringify(['REQ', subscriptionId, filters]));
                 };
 
@@ -154,6 +155,11 @@
                     const [type, subscriptionId, event] = data;
 
                     if (type === 'EVENT') {
+                        if (event.kind === 0) {
+                            console.log(event)
+                            const metadata = JSON.parse(event.content);
+                            authorNames[event.pubkey] = metadata.display_Name || metadata.displayName || metadata.username || metadata.name || metadata.nip05 || metadata.lud16 || event.pubkey;
+                        }
                         if (!initialLoadFinished) {
                             // Add event to buffer during initial load
                             buffer.push(event);
@@ -189,7 +195,7 @@
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note';
                 let formattedDate = new Date(event.created_at * 1000).toLocaleString("en-US", { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
-                let formattedAuthor = `${event.pubkey.substring(0, 8)}:${event.pubkey.slice(-8)}`;
+                let formattedAuthor = authorNames[event.pubkey] || event.pubkey; // Use the author name if it exists, otherwise use the pubkey
                 let formattedContent = event.content;
 
                 // Determine the note's class based on the global message count
@@ -212,12 +218,15 @@
 
                 noteElement.innerHTML = `
                      <div class="note-header">
-                         <div class="author">${formattedAuthor}</div>
-                         <div class="date">${formattedDate}</div>
-                     </div>
-                     <div class="note-content">${formattedContent}</div>
+                        <div class="author">
+                            <div style="border-radius: 50%; width: 50px; height: 50px; background-color: gray; background-image: url(${event.picture}); background-size: cover;"></div>
+                            ${formattedAuthor}
+                        </div>
+                        <div class="date">${formattedDate}</div>
+                    </div>
+                    <div class="note-content">${formattedContent}</div>
                 `;
-                
+
                 const notesElement = document.getElementById('notes');
 
                 // Always append the event to the notesElement
