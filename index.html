@@ -93,7 +93,7 @@
             let relayServerUrl; 
             let isScrolledToBottom = true;
             let globalMessageCount = 0;
-            let authorNames = {};
+            let authorNames = {}; 
             let authorData = {};
 
             window.addEventListener('resize', resizeImages);
@@ -154,14 +154,13 @@
                 connection.onmessage = (message) => {
                     const data = JSON.parse(message.data);
                     const [type, subscriptionId, event] = data;
-
                     if (type === 'EVENT') {
                         if (event.kind === 0) {
-                            console.log(event)
                             const metadata = JSON.parse(event.content);
+                            console.log(event)
 
                             authorData[event.pubkey] = {
-                                name: metadata.display_Name || metadata.displayName || metadata.username || metadata.name || metadata.nip05 || metadata.lud16 || event.pubkey,
+                                name: metadata.display_Name || metadata.name || metadata.nip05 || metadata.lud16 || event.pubkey,
                                 picture: metadata.picture || null
                             };
                         }
@@ -200,7 +199,7 @@
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note';
                 let formattedDate = new Date(event.created_at * 1000).toLocaleString("en-US", { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
-                let formattedAuthor = authorNames[event.pubkey] || event.pubkey; // Use the author name if it exists, otherwise use the pubkey
+                let formattedAuthor = authorData[event.pubkey] ? authorData[event.pubkey].name : `${event.pubkey.substring(0, 8)}:${event.pubkey.slice(-8)}`; // Use the author name if it exists, otherwise use the pubkey
                 let formattedContent = event.content;
 
                 // Determine the note's class based on the global message count
