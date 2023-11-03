@@ -243,7 +243,7 @@
                 noteElement.className = 'note';
                 let formattedDate = new Date(event.created_at * 1000).toLocaleString("en-US", { hour: 'numeric', minute: 'numeric', hour12: true, month: 'short', day: 'numeric' }).replace(/,/g, ' - ');
                 let formattedAuthor = authorData[event.pubkey] ? authorData[event.pubkey].name : `${event.pubkey.substring(0, 8)}:${event.pubkey.slice(-8)}`; // Use the author name if it exists, otherwise use the pubkey
-                let formattedContent = event.content;
+                let formattedContent = DOMPurify.sanitize(event.content);
 
                 // Determine the note's class based on the global message count
                 const noteClass = globalMessageCount % 2 === 0 ? 'note-even' : 'note-odd';
