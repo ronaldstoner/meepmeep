@@ -142,7 +142,7 @@
                                 const metadata = JSON.parse(event.content);
 
                                 authorData[event.pubkey] = {
-                                    name: metadata.display_Name || metadata.name || metadata.nip05 ||metadata.lud16 || event.pubkey,
+                                    name: metadata.name || metadata.display_Name || metadata.nip05 ||metadata.lud16 || event.pubkey,
                                     picture: metadata.picture || null
                                 };
                                 connection_type0.close();
