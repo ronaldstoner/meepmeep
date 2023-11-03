@@ -49,6 +49,7 @@
                 width: 90%;
             }
 
+
             .note-even {
                 background-color: #f0f0f0;
             }
@@ -88,21 +89,18 @@
     <body>
         <div id="notes"></div>
         <script>
-            let connection;
+            console.log("Starting up MeepMeep chat client...");
+
+            let connection_type0;
+            let connection_type1;
             let messageCount = 0;
             let relayServerUrl; 
-            let isScrolledToBottom = true;
             let globalMessageCount = 0;
             let authorNames = {}; 
             let authorData = {};
 
             window.addEventListener('resize', resizeImages);
             window.addEventListener('load', resizeImages);
-
-            const notesElement = document.getElementById('notes');
-            notesElement.addEventListener('scroll', () => {
-                isScrolledToBottom = notesElement.scrollHeight - notesElement.scrollTop === notesElement.clientHeight;
-            });
 
             function resizeImages() {
                 let images = document.getElementsByClassName('note-image');
@@ -112,12 +110,56 @@
             }
 
             function generateGUID() {
-                return 'xxxx-xxxx-xxxxxxxx'.replace(/[x]/g, function(c) {
+                return 'xxxx-xxxxxx'.replace(/[x]/g, function(c) {
                     var r = Math.random() * 16 | 0,
                         v = c === 'x' ? r : (r & 0x3 | 0x8);
                     return v.toString(16);
                 });
             }
+
+            function getAuthorData(pubkey) { 
+                // Check if we already have author data
+                if (authorData[pubkey]) {
+                    return;
+                };
+
+                return new Promise((resolve, reject) => {
+                    connection_type0 = new WebSocket(relayServerUrl);
+
+                    connection_type0.onopen = () => {
+                        const subscriptionIdType0 = 'meep-0-' + generateGUID();  // using generated GUID here
+                        const filters = { authors: [pubkey], kinds: [0] };
+                        connection_type0.send(JSON.stringify(['REQ', subscriptionIdType0, filters]));
+                    };
+
+                    connection_type0.onmessage = (message) => {
+                        console.log(message);
+                        const data = JSON.parse(message.data);
+                        const [type, subscriptionIdType0, event] = data; 
+
+                        if (type === 'EVENT') {
+                            if (event.kind === 0) {
+                                const metadata = JSON.parse(event.content);
+
+                                authorData[event.pubkey] = {
+                                    name: metadata.display_Name || metadata.name || metadata.nip05 ||metadata.lud16 || event.pubkey,
+                                    picture: metadata.picture || null
+                                };
+                                connection_type0.close();
+                                resolve();
+                            }
+                        } else if (type === "EOSE") {
+                            return;
+                        }
+                    };
+
+                    connection_type0.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        connection_type0.close(); // Close the connection and trigger onclose
+                        reject(error);
+                    };
+                })
+            };
 
             function startWebSocket() {
                 let buffer = [];
@@ -140,43 +182,44 @@
                     if (!relayServerUrl.startsWith("wss://")) {
                         relayServerUrl = "wss://" + relayServerUrl;
                     }
-                }
-
-                connection = new WebSocket(relayServerUrl);
-
-                connection.onopen = () => {
-                    const twoDaysAgo = Math.floor(Date.now() / 1000) - (2 * 24 * 60 * 60);
-                    const subscriptionId = 'meepmeep-' + generateGUID();  // using generated GUID here
-                    const filters = { kinds: [0, 1], since: twoDaysAgo };
-                    connection.send(JSON.stringify(['REQ', subscriptionId, filters]));
                 };
 
-                connection.onmessage = (message) => {
+                console.log("Connecting to relay " + relayServerUrl);
+
+                connection_type1 = new WebSocket(relayServerUrl);
+                
+                connection_type1.onopen = () => {
+                    console.log("Connected to " + relayServerUrl);
+                    const sevenDaysAgo = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60);
+                    const subscriptionId = 'meep-1-' + generateGUID();  // using generated GUID here
+                    const filters = { kinds: [1], since: sevenDaysAgo };
+                    connection_type1.send(JSON.stringify(['REQ', subscriptionId, filters]));
+                    console.log("Sending Type 1 event subscription");
+                };
+
+                connection_type1.onmessage = async (message) => {
+                    console.log(message);
                     const data = JSON.parse(message.data);
                     const [type, subscriptionId, event] = data;
                     if (type === 'EVENT') {
-                        if (event.kind === 0) {
-                            const metadata = JSON.parse(event.content);
-                            console.log(event)
-
-                            authorData[event.pubkey] = {
-                                name: metadata.display_Name || metadata.name || metadata.nip05 || metadata.lud16 || event.pubkey,
-                                picture: metadata.picture || null
-                            };
-                        }
-                        if (!initialLoadFinished) {
+                        if (!initialLoadFinished && event.kind === 1) {
                             // Add event to buffer during initial load
+                            // await getAuthorData(event.pubkey) - Historical is not working 
                             buffer.push(event);
                         } else {
-                            // Display event immediately after initial load
-                            displayEvent(event);
+                            if (event.kind === 1) {
+                                // Display event immediately after initial load
+                                await getAuthorData(event.pubkey)
+                                displayEvent(event);
+                            }
                         }
                     } else if (type === 'EOSE' && !initialLoadFinished) {
                         // Sort buffer, render all events, mark initial load as finished, and empty buffer
                         buffer.sort((a, b) => a.created_at - b.created_at);
                         for (const event of buffer) {
                             if (messageCount >= 500) break;
-                            displayEvent(event);
+                            // await getAuthorData(event.pubkey) - This doesn't work here
+                            displayEvent(event); // Get historical author name and picture if returned
                             messageCount++;
                         }
                         initialLoadFinished = true;
@@ -184,18 +227,18 @@
                     }
                 };
 
-                connection.onclose = () => {
+                connection_type1.onclose = () => {
                     setTimeout(startWebSocket, 1000);
                 };
 
-                connection.onerror = (error) => {
+                connection_type1.onerror = (error) => {
                     console.error('WebSocket error:', error);
-                    connection.close(); // Close the connection and trigger onclose
+                    connection_type1.close(); // Close the connection and trigger onclose
                 };
             };
 
             function displayEvent(event) {
-                console.log("New event received", event);
+                // console.log("New event received", event);
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note';
                 let formattedDate = new Date(event.created_at * 1000).toLocaleString("en-US", { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
@@ -221,10 +264,12 @@
                 });
 
                 noteElement.innerHTML = `
-                     <div class="note-header">
+                    <div class="note-header">
                         <div class="author">
-                            <div style="border-radius: 50%; width: 50px; height: 50px; background-color: gray; background-image: url(${authorData[event.pubkey] ? authorData[event.pubkey].picture : ''}); background-size: cover;"></div>
-                            ${formattedAuthor}
+                            <a href="https://snort.social/p/${event.pubkey}" target="_blank" style="text-decoration: none;">
+                                <div style="border-radius: 50%; width: 50px; height: 50px; background-color: gray; background-image: url(${authorData[event.pubkey] ? authorData[event.pubkey].picture : ''}); background-size: cover;"></div>
+                                ${formattedAuthor}
+                            </a>
                         </div>
                         <div class="date">${formattedDate}</div>
                     </div>
@@ -233,25 +278,13 @@
 
                 const notesElement = document.getElementById('notes');
 
-                // Always append the event to the notesElement
-                notesElement.append(noteElement);
+                // Check if there are more than 500 notes, and if so, remove the oldest one
+                if (notesElement.children.length >= 500) {
+                    notesElement.removeChild(notesElement.lastChild);
+                }
+                notesElement.insertBefore(noteElement, notesElement.firstChild);
 
                 resizeImages();  // Resize images after appending a new note
-
-                // Check if there are more than 500 notes, and if so, remove the oldest one
-                while (notesElement.children.length > 500) {
-                    notesElement.removeChild(notesElement.firstChild);
-                }
-
-                // Only scroll to the bottom if the user has not scrolled up to view older messages
-                if (isScrolledToBottom) {
-                    notesElement.scrollTop = notesElement.scrollHeight;
-                }
-
-                // Reset the title if the user scrolls to the bottom
-                if (isScrolledToBottom && document.title === "***meepmeep") {
-                    document.title = "meepmeep";
-                }
             }
 
             startWebSocket();
