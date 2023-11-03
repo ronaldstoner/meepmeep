@@ -253,7 +253,7 @@
                 let urlPattern = /(https?:\/\/[^\s]+)/g;
                 formattedContent = formattedContent.replace(urlPattern, function(url) {
                     if (/\.(jpeg|jpg|gif|png|bmp|webp|tiff)$/i.test(url)) {
-                        return `<br><img class="note-image" src="${url}" alt="Image"/><br>`;
+                        return `<br><a href="${url}" target="_blank" style="text-decoration: none;"><img class="note-image" src="${url}" alt="Image"/></a><br>`;
                     } else if (/\.mp3$/i.test(url)) {
                         return `<br><audio controls><source src="${url}" type="audio/mpeg">Your browser does not support the audio tag.</audio><br>`;
                     } else if (/\.(mp4|mov|avi)$/i.test(url)) {
