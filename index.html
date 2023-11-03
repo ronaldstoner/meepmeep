@@ -241,7 +241,7 @@
                 // console.log("New event received", event);
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note';
-                let formattedDate = new Date(event.created_at * 1000).toLocaleString("en-US", { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
+                let formattedDate = new Date(event.created_at * 1000).toLocaleString("en-US", { hour: 'numeric', minute: 'numeric', hour12: true, month: 'short', day: 'numeric' }).replace(/,/g, ' - ');
                 let formattedAuthor = authorData[event.pubkey] ? authorData[event.pubkey].name : `${event.pubkey.substring(0, 8)}:${event.pubkey.slice(-8)}`; // Use the author name if it exists, otherwise use the pubkey
                 let formattedContent = event.content;
 
